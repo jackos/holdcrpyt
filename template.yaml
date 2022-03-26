@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+## These settings are used for every lambda and API
+Globals:
+  Function:
+    Runtime: provided.al2
+    Handler: bootstrap
+    Architectures: ["x86_64"]
+    Timeout: 30
+    MemorySize: 128
+    Environment:
+      Variables:
+  Api:
+    Cors:
+      AllowMethods: "'*'"
+      AllowHeaders: "'*'"
+      AllowOrigin: "'*'"
+    Auth:
+      AddDefaultAuthorizerToCorsPreflight: False
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/lambda/basic/
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/hello
+            Method: GET
+
+Outputs:
+  FunctionName:
+    Value: !Ref HelloWorldFunction
+    Description: Name of the Lambda function
+
