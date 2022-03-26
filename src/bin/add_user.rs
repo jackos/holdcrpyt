@@ -1,9 +1,9 @@
 use aws_sdk_dynamodb::Client;
 use aws_sdk_dynamodb::model::AttributeValue;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{json};
 use uuid::Uuid;
-use lambda_http::{service_fn, Error, IntoResponse, Request, RequestExt, Body};
+use lambda_http::{service_fn, Error, IntoResponse, Request, Body};
 
 #[derive(Deserialize, Debug)]
 struct Person {
@@ -13,13 +13,13 @@ struct Person {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    lambda_http::run(service_fn(add_user)).await;
+    lambda_http::run(service_fn(add_user)).await.unwrap();
     Ok(())
 }
 
 
 async fn add_user(event: Request) -> Result<impl IntoResponse, Error> {
-    let (event, body) = event.into_parts();
+    let (_, body) = event.into_parts();
 
     if let Body::Text(txt) = body {
         let b: Person = serde_json::from_str(&txt)?;
@@ -38,6 +38,6 @@ async fn add_user(event: Request) -> Result<impl IntoResponse, Error> {
         return Ok(json!({"message": "record written"}));
     }
 
-    Ok(json!({"message": "No body received"}))
+    Ok(json!({"message": "no body"}))
 }
 
