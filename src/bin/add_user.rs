@@ -3,9 +3,9 @@ use aws_sdk_dynamodb::model::AttributeValue;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
-use lambda_runtime::{service_fn, LambdaEvent, Error};
+use lambda_http::{service_fn, Error, IntoResponse, Request, RequestExt, Body};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Person {
     first_name: String,
     last_name: String
@@ -13,25 +13,31 @@ struct Person {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let func = service_fn(func);
-    lambda_runtime::run(func).await?;
+    lambda_http::run(service_fn(add_user)).await;
     Ok(())
 }
 
-async fn func(event: LambdaEvent<Person>) -> Result<Value, Error> {
-    let (event, _context) = event.into_parts();
 
-    let uuid = Uuid::new_v4().to_string();
-    let config = aws_config::load_from_env().await;
-    let client = Client::new(&config); 
+async fn add_user(event: Request) -> Result<impl IntoResponse, Error> {
+    let (event, body) = event.into_parts();
 
-    let request = client.put_item()
+    if let Body::Text(txt) = body {
+        let b: Person = serde_json::from_str(&txt)?;
+        
+        let uuid = Uuid::new_v4().to_string();
+        let config = aws_config::load_from_env().await;
+        let client = Client::new(&config); 
+        
+        let request = client.put_item()
         .table_name("user")
         .item("uid", AttributeValue::S(String::from(uuid)))
-        .item("first_name", AttributeValue::S(String::from(event.first_name)))
-        .item("last_name", AttributeValue::S(String::from(event.last_name)));
-    request.send().await?;
+        .item("first_name", AttributeValue::S(String::from(b.first_name)))
+        .item("last_name", AttributeValue::S(String::from(b.last_name)));
+        request.send().await?;
+        
+        return Ok(json!({"message": "record written"}));
+    }
 
-    Ok(json!({"message": "record written"}))
+    Ok(json!({"message": "No body received"}))
 }
 

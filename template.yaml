@@ -9,8 +9,8 @@ Globals:
     Architectures: ["x86_64"]
     Timeout: 30
     MemorySize: 128
-    Environment:
-      Variables:
+    # Environment:
+    #   Variables:
   Api:
     Cors:
       AllowMethods: "'*'"
@@ -23,16 +23,38 @@ Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/lambda/basic/
+      CodeUri: target/lambda/hello/
       Events:
         CatchAll:
           Type: Api
           Properties:
             Path: /v1/hello
             Method: GET
-
+  HelloNameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/lambda/hello_name/
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/hello_name
+            Method: GET
+  AddUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/lambda/add_user/
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/user
+            Method: POST
 Outputs:
-  FunctionName:
+  HelloWorldName:
     Value: !Ref HelloWorldFunction
     Description: Name of the Lambda function
+  # HelloName:
+  #   Value: !Ref HelloNameFunction
+  #   Description: Name of the Lambda function
 
