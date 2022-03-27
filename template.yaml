@@ -4,6 +4,7 @@ Transform: AWS::Serverless-2016-10-31
 ## These settings are used for every lambda and API
 Globals:
   Function:
+    CodeUri: target/lambda/
     Runtime: provided.al2
     Handler: bootstrap
     Architectures: ["x86_64"]
@@ -23,7 +24,7 @@ Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/lambda/hello/
+      CodeUri: target/lambda/hello
       Events:
         CatchAll:
           Type: Api
@@ -33,7 +34,7 @@ Resources:
   HelloNameFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/lambda/hello_name/
+      CodeUri: target/lambda/hello_name
       Events:
         CatchAll:
           Type: Api
@@ -43,12 +44,42 @@ Resources:
   AddUser:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/lambda/add_user/
+      CodeUri: target/lambda/add_user
       Events:
         CatchAll:
           Type: Api
           Properties:
             Path: /v1/user
+            Method: POST
+  AddTransaction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/lambda/add_transaction
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/user/{username}/transaction
+            Method: POST
+  Closure:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/lambda/closure
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/closure
+            Method: POST
+  CustomResponse:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/lambda/custom_response
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/custom_response
             Method: POST
 Outputs:
   HelloWorldName:
