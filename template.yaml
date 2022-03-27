@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
+
 ## These settings are used for every lambda and API
 Globals:
   Function:
-    CodeUri: target/lambda/
     Runtime: provided.al2
     Handler: bootstrap
     Architectures: ["x86_64"]
@@ -13,6 +13,7 @@ Globals:
     # Environment:
     #   Variables:
   Api:
+    Name: holdcrypt
     Cors:
       AllowMethods: "'*'"
       AllowHeaders: "'*'"
@@ -20,72 +21,100 @@ Globals:
     Auth:
       AddDefaultAuthorizerToCorsPreflight: False
 
+
 Resources:
-  HelloWorldFunction:
+#########################################
+## Users
+#########################################
+  UsersGet:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/lambda/hello
+      FunctionName: users_get
+      CodeUri: target/lambda/users_get
       Events:
         CatchAll:
           Type: Api
           Properties:
-            Path: /v1/hello
+            Path: /v1/users
             Method: GET
-  HelloNameFunction:
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: ["dynamodb:Scan"]
+              Resource: "arn:aws:dynamodb:ap-southeast-2:799166840327:table/user"
+  UsersPut:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/lambda/hello_name
+      FunctionName: users_put
+      CodeUri: target/lambda/users_put
       Events:
         CatchAll:
           Type: Api
           Properties:
-            Path: /v1/hello_name
+            Path: /v1/users
+            Method: PUT
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: ["dynamodb:UpdateItem", "dynamodb:PutItem"]
+              Resource: "arn:aws:dynamodb:ap-southeast-2:799166840327:table/user"
+#########################################
+## Transactions
+#########################################
+  TransactionsPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: transactions_post
+      CodeUri: target/lambda/transactions_post
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/transactions
+            Method: POST
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: ["dynamodb:UpdateItem", "dynamodb:PutItem"]
+              Resource: "arn:aws:dynamodb:ap-southeast-2:799166840327:table/user"
+#########################################
+## Coins
+#########################################
+  CoinsGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: coins_get
+      CodeUri: target/lambda/coins_get
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /v1/coins
             Method: GET
-  AddUser:
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: "dynamodb:Scan"
+              Resource: !Sub "arn:aws:dynamodb:ap-southeast-2:799166840327:table/coin"
+  CoinsPut:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/lambda/add_user
+      FunctionName: coins_put
+      CodeUri: target/lambda/coins_put
       Events:
         CatchAll:
           Type: Api
           Properties:
-            Path: /v1/user
-            Method: POST
-  AddTransaction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: target/lambda/add_transaction
-      Events:
-        CatchAll:
-          Type: Api
-          Properties:
-            Path: /v1/user/{username}/transaction
-            Method: POST
-  Closure:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: target/lambda/closure
-      Events:
-        CatchAll:
-          Type: Api
-          Properties:
-            Path: /v1/closure
-            Method: POST
-  CustomResponse:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: target/lambda/custom_response
-      Events:
-        CatchAll:
-          Type: Api
-          Properties:
-            Path: /v1/custom_response
-            Method: POST
-Outputs:
-  HelloWorldName:
-    Value: !Ref HelloWorldFunction
-    Description: Name of the Lambda function
-  # HelloName:
-  #   Value: !Ref HelloNameFunction
-  #   Description: Name of the Lambda function
+            Path: /v1/coins
+            Method: PUT
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: ["dynamodb:UpdateItem", "dynamodb:PutItem"]
+              Resource: !Sub "arn:aws:dynamodb:ap-southeast-2:799166840327:table/coin"
 
