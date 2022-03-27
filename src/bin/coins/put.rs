@@ -19,12 +19,22 @@ struct Prices {
     pub asks: Vec<Vec<String>>, // offered sell prices
 }
 
-
 #[derive(Serialize, Deserialize)]
 struct RequestBody {
-    pub coins: Vec<String>,
+    coins: Vec<Coin>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Coin {
+    name: String,
+    symbol: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CoinValue {
+    name: String,
+    price: f64,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -39,7 +49,7 @@ async fn main() -> Result<(), Error> {
 }
 
 async fn lambda(event: Request) -> Result<impl IntoResponse, Error> {
-    let mut price_map: HashMap<String, f64> = HashMap::new();
+    let mut price_map: HashMap<String, CoinValue> = HashMap::new();
 
     let body: RequestBody = match event.body() {
         Body::Text(text) => match serde_json::from_str(text) {
@@ -50,8 +60,8 @@ async fn lambda(event: Request) -> Result<impl IntoResponse, Error> {
         Body::Binary(_) => return Ok(Res::bad_request("binary body not supported"))
     };
 
-    for name in body.coins {
-        let params = [("symbol", &name), ("limit", &"50".to_string())];
+    for coin in body.coins {
+        let params = [("symbol", &coin.symbol), ("limit", &"50".to_string())];
         let client = reqwest::Client::new();
         let config = aws_config::load_from_env().await;
         let dynamo_client = Client::new(&config); 
@@ -76,10 +86,11 @@ async fn lambda(event: Request) -> Result<impl IntoResponse, Error> {
             sum += price[0].parse::<f64>().unwrap();
         }
         let average = sum / total;
-        price_map.insert(name.clone(), average);
+        price_map.insert(coin.symbol.clone(), CoinValue{price: average, name: coin.name.clone()});
         let request = dynamo_client.put_item()
             .table_name("coin")
-            .item("name", AttributeValue::S(name))
+            .item("name", AttributeValue::S(coin.name))
+            .item("symbol", AttributeValue::S(coin.symbol))
             .item("price", AttributeValue::N(average.to_string()));
 
         if let Err(err) = request.send().await {

@@ -42,7 +42,7 @@ Resources:
           Statement:
             - Effect: Allow
               Action: ["dynamodb:Scan"]
-              Resource: "arn:aws:dynamodb:ap-southeast-2:799166840327:table/user"
+              Resource: ["arn:aws:dynamodb:ap-southeast-2:799166840327:table/user", "arn:aws:dynamodb:ap-southeast-2:799166840327:table/coin"]
   UsersPut:
     Type: AWS::Serverless::Function
     Properties:

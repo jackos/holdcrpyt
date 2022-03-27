@@ -1,19 +1,17 @@
-use aws_sdk_dynamodb::Client;
+use aws_sdk_dynamodb::{Client, output::ScanOutput};
 use lambda_http::{service_fn, Error, IntoResponse, Request};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, io::ErrorKind};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
 use holdcrypt::Res;
 
-// Binance response, bids and asks contain pairs in array format: [price, amount]
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Prices {
-    #[serde(rename = "lastUpdateId")]
-    pub last_update_id: i64,
-    pub bids: Vec<Vec<String>>, // offered buy prices
-    pub asks: Vec<Vec<String>>, // offered sell prices
+
+#[derive(Serialize, Deserialize)]
+struct CoinValue {
+    name: String,
+    price: f64,
 }
 
 #[tokio::main]
@@ -31,17 +29,34 @@ async fn main() -> Result<(), Error> {
 async fn lambda(_: Request) -> Result<impl IntoResponse, Error> {
     let config = aws_config::load_from_env().await;
     let client = Client::new(&config);
-    let items = client.scan().table_name("coin").send().await?;
+    let items = match client.scan().table_name("coin").send().await {
+        Ok(v) => v,
+        Err(error) => return Ok(Res::internal_server_error("dynamodb table doesn't exist", Box::new(error))),
+    };
 
-    let mut price_map = HashMap::new();
-    for map in items.items().unwrap() {
-        let name = map.get("name").unwrap();
-        let name = name.as_s().unwrap();
-
-        let price = map.get("price").unwrap();
-        let price: f64 = price.as_n().unwrap().parse::<f64>().unwrap();
-        price_map.insert(name, price);
-    }
-    let res_body = serde_json::to_string(&price_map).unwrap();
+    let price_map = match get_items(items) {
+        Ok(v) => v,
+        Err(error) => return Ok(Res::internal_server_error("failed to scan result from dynamodb", error)),
+    };
+    
+    let res_body = match serde_json::to_string(&price_map) {
+        Ok(v) => v,
+        Err(error) => return Ok(Res::internal_server_error("failed to parse dynamodb response", Box::new(error))),
+    };
     Ok(Res::ok_body(&res_body))
+}
+
+fn get_items(items: ScanOutput) -> Result<HashMap<String, CoinValue>, Error> {
+    let mut price_map = HashMap::new();
+    for map in items.items().ok_or("no items in table")? {
+        let name = map.get("name").ok_or("name key doesn't exist")?
+            .as_s().map_err(|_| std::io::Error::new(ErrorKind::Other, "name type incorrect"))?;
+        let symbol = map.get("symbol").ok_or("symbol key doesn't exist")?
+            .as_s().map_err(|_| std::io::Error::new(ErrorKind::Other, "symbol type incorrect"))?;
+        let price = map.get("price").ok_or("price key doesn't exist")?
+            .as_n().map_err(|_| std::io::Error::new(ErrorKind::Other, "price type incorrect"))?
+            .parse::<f64>()?;
+        price_map.insert(symbol.clone(), CoinValue{name: name.clone(), price});
+    }
+    Ok(price_map)
 }
