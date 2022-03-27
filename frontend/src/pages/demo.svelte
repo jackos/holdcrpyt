@@ -52,8 +52,8 @@
 										{/if}
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{coin.name}</td>
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{coin.price.toFixed(2)}</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{coin.amount}</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">{(coin.amount * coin.price).toFixed()}</td>
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{coin.amount.toFixed(4)}</td>
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">{(coin.amount * coin.price).toFixed(2)}</td>
 									</tr>{/each}
 							{/each}
 						</tbody>

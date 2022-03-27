@@ -77,13 +77,11 @@ async fn lambda(event: Request) -> Result<impl IntoResponse, Error> {
             Ok(res) => res,
             Err(err) => return Ok(Res::parse_response_error("failed to parse prices from Binance", err)),
         };
-            // .json()
-            // .unwrap();
 
         let mut sum = 0f64;
         let total: f64 = prices.asks.len() as f64;
         for price in prices.asks {
-            sum += price[0].parse::<f64>().unwrap();
+            sum += price[0].parse::<f64>().expect("failed to parse price as f64");
         }
         let average = sum / total;
         price_map.insert(coin.symbol.clone(), CoinValue{price: average, name: coin.name.clone()});
@@ -98,7 +96,10 @@ async fn lambda(event: Request) -> Result<impl IntoResponse, Error> {
         }
     }
 
-    let resp = serde_json::to_string(&price_map).unwrap();
+    let resp = match serde_json::to_string(&price_map) {
+        Ok(v) => v,
+        Err(error) => return Ok(Res::internal_server_error("failed to convert struct to json string", Box::new(error))),
+    };
     Ok(Res::ok_body(&resp))
 }
     

@@ -56,7 +56,7 @@ impl IntoResponse for Res {
         if self.body != "" {
             body = self.body
         } else {
-            body = serde_json::to_string(&self).unwrap();
+            body = serde_json::to_string(&self).expect("failed to convert struct to json string");
         }
         info!(r#"{{"status_code": {}}}"#, self.status);
         if self.status < 400 {
