@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import { users } from "../store";
 
-	const apiUrl = "https://8itei109kk.execute-api.ap-southeast-2.amazonaws.com/Stage/v1";
+	const apiUrl = "https://88xbblt6r8.execute-api.ap-southeast-2.amazonaws.com/Stage/v1";
 
 	const fetchUsers = async () => {
 		const res = await fetch(`${apiUrl}/users`);
